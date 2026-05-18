@@ -54,10 +54,10 @@ SOURCE_COLUMNS = [
     "ReportedValue",
 ]
 
-# Required API values only. The API request remains simple; these are applied locally
-# after the data is downloaded, mimicking the stable working reefer app pattern.
+# Required API values only. The API request remains simple; these are lied locally
+# after the data is downloaded, mimicking the stable working reefer  pattern.
 VALUE_ALIASES = {
-    # Canonical app column: API ValueDescription aliases to accept.
+    # Canonical  column: API ValueDescription aliases to accept.
     # Units in Marorka are usually cbm; displayed as m3 for the colleague-facing report.
     "Water Consumed (m3)": [
         "FW Consumed [cbm]",
@@ -132,13 +132,13 @@ VESSEL_GROUPS = {
 VESSEL_OPTIONS = sorted({v for vessels in VESSEL_GROUPS.values() for v in vessels})
 
 # Default report filters. These are intentionally light: the colleague-facing
-# app should show all fetched water/waste rows unless the user adds filters.
+#  should show all fetched water/waste rows unless the user adds filters.
 DEFAULT_REPORT_FILTER_COLUMNS: list[str] = []
 DEFAULT_REPORT_NUMERIC_FILTERS: dict[str, dict[str, str]] = {}
 DEFAULT_REPORT_CATEGORICAL_FILTERS: dict[str, list[str]] = {}
 
 
-st.set_page_config(page_title=APP_TITLE, layout="wide")
+st.set_page_config(page_title=_TITLE, layout="wide")
 
 
 # =============================================================================
@@ -146,7 +146,7 @@ st.set_page_config(page_title=APP_TITLE, layout="wide")
 # =============================================================================
 
 
-def apply_custom_css() -> None:
+def ly_custom_css() -> None:
     background_image_url = dashboard_background_image_url()
     background_image_layer = dashboard_background_image_layer(background_image_url)
     hero_background = dashboard_hero_background(has_background_image=bool(background_image_url))
@@ -169,7 +169,7 @@ def apply_custom_css() -> None:
             --red-muted: rgba(207, 95, 95, 0.24);
         }
 
-        .stApp {
+        .st {
             background:
                 __BACKGROUND_IMAGE_LAYER__
                 radial-gradient(circle at top left, rgba(255, 216, 74, 0.13), transparent 34rem),
@@ -735,7 +735,7 @@ def dashboard_background_image_url() -> str:
 
     image_path = Path(source).expanduser() if source else DEFAULT_BACKGROUND_IMAGE
     if not image_path.is_absolute():
-        image_path = APP_DIR / image_path
+        image_path = _DIR / image_path
     if source and not image_path.is_file():
         image_path = DEFAULT_BACKGROUND_IMAGE
 
@@ -788,7 +788,7 @@ def require_dashboard_password() -> None:
     if st.session_state.get("dashboard_authenticated"):
         return
 
-    apply_custom_css()
+    ly_custom_css()
     st.markdown(
         """
         <div class="dashboard-hero">
@@ -824,7 +824,7 @@ def request_auth(username: str, password: str, auth_method: str) -> Any:
 
 
 def request_headers(token: str, auth_method: str) -> dict[str, str]:
-    headers = {"Accept": "application/json"}
+    headers = {"Accept": "lication/json"}
     if auth_method.lower() == "bearer":
         if not token:
             raise MarorkaConfigError("MARORKA_TOKEN is required for bearer auth.")
@@ -903,7 +903,7 @@ def compact_odata_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         if row.get("ReportType") in EXCLUDED_REPORT_TYPES:
             continue
-        compact_rows.append({column: row.get(column) for column in SOURCE_COLUMNS})
+        compact_rows.end({column: row.get(column) for column in SOURCE_COLUMNS})
 
     return compact_rows
 
@@ -1065,7 +1065,7 @@ def sum_numeric_columns(df: pd.DataFrame, columns: list[str]) -> pd.Series:
     available_columns = [column for column in columns if column in df.columns]
     if not available_columns:
         return pd.Series(pd.NA, index=df.index, dtype="Float64")
-    return df[available_columns].apply(pd.to_numeric, errors="coerce").sum(axis=1, min_count=1)
+    return df[available_columns].ly(pd.to_numeric, errors="coerce").sum(axis=1, min_count=1)
 
 
 def build_report_rows(df: pd.DataFrame) -> pd.DataFrame:
@@ -1172,9 +1172,9 @@ def filter_reports_for_selection(
 
 
 def add_calculations(report_df: pd.DataFrame) -> pd.DataFrame:
-    """Keep the same transform hook as the performance app.
+    """Keep the same transform hook as the performance .
 
-    This twin app does not calculate performance KPIs. It only pivots the
+    This twin  does not calculate performance KPIs. It only pivots the
     selected Marorka ValueDescription rows into colleague-facing columns and
     rounds numeric water/waste quantities.
     """
@@ -1374,7 +1374,7 @@ def render_excel_like_filters(
     options = []
     for column in [*previous_columns, *current_options]:
         if column not in options:
-            options.append(column)
+            options.end(column)
 
     selected_columns = st.multiselect(
         label,
@@ -1403,7 +1403,7 @@ def render_excel_like_filters(
             to_value, to_ok = parse_optional_date(to_text)
             if not from_ok or not to_ok:
                 st.warning(f"{column}: enter dates as dd/mm/yyyy or yyyy-mm-dd.")
-            specs.append({"column": column, "kind": "datetime", "from": from_value, "to": to_value})
+            specs.end({"column": column, "kind": "datetime", "from": from_value, "to": to_value})
             continue
 
         if is_numeric_like(series):
@@ -1426,7 +1426,7 @@ def render_excel_like_filters(
             if minimum is not None and maximum is not None and minimum > maximum:
                 minimum, maximum = maximum, minimum
                 min_op, max_op = ">=", "<="
-            specs.append({
+            specs.end({
                 "column": column,
                 "kind": "numeric",
                 "min": minimum,
@@ -1443,19 +1443,19 @@ def render_excel_like_filters(
         value_options = []
         for value in [*previous_values, *unique_display_values(series)]:
             if value not in value_options:
-                value_options.append(value)
+                value_options.end(value)
         selected_values = st.multiselect(
             "Values",
             options=value_options,
             key=value_key,
             help="Leave blank to include all values for this column.",
         )
-        specs.append({"column": column, "kind": "categorical", "values": selected_values})
+        specs.end({"column": column, "kind": "categorical", "values": selected_values})
 
     return specs
 
 
-def apply_excel_like_filters(df: pd.DataFrame, specs: list[dict[str, Any]]) -> pd.DataFrame:
+def ly_excel_like_filters(df: pd.DataFrame, specs: list[dict[str, Any]]) -> pd.DataFrame:
     filtered = df.copy()
 
     for spec in specs:
