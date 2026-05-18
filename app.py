@@ -739,9 +739,6 @@ def dashboard_background_image_url() -> str:
     if source and not image_path.is_file():
         image_path = DEFAULT_BACKGROUND_IMAGE
 
-    st.caption(f"Background image source: {source or '(default)'}")
-    st.caption(f"Background image path checked: {image_path}")
-    st.caption(f"Exists: {image_path.is_file()}")
 
     if not image_path.is_file():
         return ""
