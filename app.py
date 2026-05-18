@@ -24,7 +24,7 @@ from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 # Configuration
 # =============================================================================
 
-APP_TITLE = "Magic Noon - Water & Waste"
+APP_TITLE = "ESG - Water & Waste"
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_BACKGROUND_IMAGE = APP_DIR / ""
 ODATA_ENDPOINT = "https://online.marorka.com/Odata/v1/ODataService.svc/ReportData"
@@ -138,7 +138,7 @@ DEFAULT_REPORT_NUMERIC_FILTERS: dict[str, dict[str, str]] = {}
 DEFAULT_REPORT_CATEGORICAL_FILTERS: dict[str, list[str]] = {}
 
 
-st.set_page_config(page_title=_TITLE, layout="wide")
+st.set_page_config(page_title=APP_TITLE, layout="wide")
 
 
 # =============================================================================
