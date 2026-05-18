@@ -753,7 +753,7 @@ def render_header(selected_group: str, selected_vessels: list[str]) -> None:
         f"""
         <div class="dashboard-hero">
             <div class="eyebrow">Marorka water & waste monitoring</div>
-            <h1 class="dashboard-title">Magic Noon - Water & Waste</h1>
+            <h1 class="dashboard-title">ESG - Water & Waste</h1>
             <div class="dashboard-subtitle">
                 {escape(selected_group)} | {escape(vessel_text)} | water / sludge / bilge API snapshot
             </div>
@@ -793,7 +793,7 @@ def require_dashboard_password() -> None:
         """
         <div class="dashboard-hero">
             <div class="eyebrow">Secure access</div>
-            <h1 class="dashboard-title">Magic Noon - Water & Waste</h1>
+            <h1 class="dashboard-title">ESG - Water & Waste</h1>
             <div class="dashboard-subtitle">Enter your dashboard password to continue.</div>
         </div>
         """,
