@@ -146,7 +146,7 @@ st.set_page_config(page_title=APP_TITLE, layout="wide")
 # =============================================================================
 
 
-def ly_custom_css() -> None:
+def apply_custom_css() -> None:
     background_image_url = dashboard_background_image_url()
     background_image_layer = dashboard_background_image_layer(background_image_url)
     hero_background = dashboard_hero_background(has_background_image=bool(background_image_url))
@@ -162,19 +162,19 @@ def ly_custom_css() -> None:
             --bg: #050505;
             --panel: #10100C;
             --panel-soft: #19170F;
-            --border: rgba(245, 200, 75, 0.24);
+            --border: rgba(0, 212, 106, 0.24);
             --text-soft: #B8B29F;
-            --cyan: #FFD84A;
-            --green: #FFB000;
+            --cyan: #00D46A;
+            --green: #00A85A;
             --red-muted: rgba(207, 95, 95, 0.24);
         }
 
-        .st {
+        .stApp {
             background:
                 __BACKGROUND_IMAGE_LAYER__
-                radial-gradient(circle at top left, rgba(255, 216, 74, 0.13), transparent 34rem),
-                radial-gradient(circle at top right, rgba(255, 176, 0, 0.10), transparent 30rem),
-                linear-gradient(180deg, rgba(255, 216, 74, 0.04), transparent 22rem),
+                radial-gradient(circle at top left, rgba(0, 212, 106, 0.13), transparent 34rem),
+                radial-gradient(circle at top right, rgba(0, 168, 90, 0.10), transparent 30rem),
+                linear-gradient(180deg, rgba(0, 212, 106, 0.04), transparent 22rem),
                 var(--bg);
             background-position: center center;
             background-size: cover;
@@ -276,11 +276,11 @@ def ly_custom_css() -> None:
             font-weight: 700 !important;
         }
 
-        /* Inputs: calm by default; one homogeneous gold outline only on focus. */
+        /* Inputs: calm by default; one homogeneous green outline only on focus. */
         div[data-baseweb="select"] > div,
         div[data-baseweb="input"] > div {
             background-color: rgba(13, 13, 9, 0.88) !important;
-            border: 1px solid rgba(255, 216, 74, 0.16) !important;
+            border: 1px solid rgba(0, 212, 106, 0.16) !important;
             border-radius: 14px !important;
             box-shadow: none !important;
             outline: none !important;
@@ -298,20 +298,20 @@ def ly_custom_css() -> None:
             border: 0 !important;
             box-shadow: none !important;
             outline: none !important;
-            caret-color: #FFD84A !important;
+            caret-color: #00D46A !important;
         }
 
         div[data-baseweb="select"] > div:hover,
         div[data-baseweb="input"] > div:hover {
-            border-color: rgba(255, 216, 74, 0.24) !important;
+            border-color: rgba(0, 212, 106, 0.24) !important;
             box-shadow: none !important;
         }
 
         div[data-baseweb="select"] > div:focus-within,
         div[data-baseweb="input"] > div:focus-within,
         div[data-baseweb="input"]:focus-within > div {
-            border-color: rgba(255, 216, 74, 0.88) !important;
-            box-shadow: 0 0 0 1px rgba(255, 216, 74, 0.64) !important;
+            border-color: rgba(0, 212, 106, 0.88) !important;
+            box-shadow: 0 0 0 1px rgba(0, 212, 106, 0.64) !important;
             outline: none !important;
         }
 
@@ -363,7 +363,7 @@ def ly_custom_css() -> None:
         div[data-baseweb="input"][data-invalid="true"] > div,
         [data-testid="stTextInput"] [aria-invalid="true"],
         [data-testid="stDateInput"] [aria-invalid="true"] {
-            border-color: rgba(255, 216, 74, 0.18) !important;
+            border-color: rgba(0, 212, 106, 0.18) !important;
             box-shadow: none !important;
             outline: none !important;
         }
@@ -374,8 +374,8 @@ def ly_custom_css() -> None:
         div[data-baseweb="input"][data-invalid="true"] > div:focus-within,
         [data-testid="stTextInput"] [aria-invalid="true"]:focus-within,
         [data-testid="stDateInput"] [aria-invalid="true"]:focus-within {
-            border-color: rgba(255, 216, 74, 0.88) !important;
-            box-shadow: 0 0 0 1px rgba(255, 216, 74, 0.64) !important;
+            border-color: rgba(0, 212, 106, 0.88) !important;
+            box-shadow: 0 0 0 1px rgba(0, 212, 106, 0.64) !important;
             outline: none !important;
         }
 
@@ -385,9 +385,9 @@ def ly_custom_css() -> None:
         [data-testid="stTextInput"] *,
         [data-testid="stDateInput"],
         [data-testid="stDateInput"] * {
-            --focus-color: #FFD84A !important;
-            --input-border-color: rgba(255, 216, 74, 0.18) !important;
-            --error-color: #FFD84A !important;
+            --focus-color: #00D46A !important;
+            --input-border-color: rgba(0, 212, 106, 0.18) !important;
+            --error-color: #00D46A !important;
             outline-color: transparent !important;
         }
 
@@ -397,8 +397,8 @@ def ly_custom_css() -> None:
         }
 
         [data-baseweb="tag"] {
-            background: linear-gradient(135deg, rgba(255, 216, 74, 0.22), rgba(255, 176, 0, 0.14)) !important;
-            border: 1px solid rgba(255, 216, 74, 0.38) !important;
+            background: linear-gradient(135deg, rgba(0, 212, 106, 0.22), rgba(0, 168, 90, 0.14)) !important;
+            border: 1px solid rgba(0, 212, 106, 0.38) !important;
             color: #FFF7CC !important;
             border-radius: 999px !important;
         }
@@ -450,7 +450,7 @@ def ly_custom_css() -> None:
         div[data-testid="stMetric"] {
             position: relative;
             background: __METRIC_BACKGROUND__ !important;
-            border: 1px solid rgba(255, 216, 74, 0.56) !important;
+            border: 1px solid rgba(0, 212, 106, 0.56) !important;
             border-radius: 20px !important;
             padding: 1.05rem 1.1rem !important;
             box-shadow: __METRIC_BOX_SHADOW__ !important;
@@ -466,7 +466,7 @@ def ly_custom_css() -> None:
             left: 1rem;
             right: 1rem;
             height: 2px;
-            background: linear-gradient(90deg, rgba(255,216,74,0), rgba(255,216,74,0.92), rgba(255,176,0,0));
+            background: linear-gradient(90deg, rgba(0,212,106,0), rgba(0,212,106,0.92), rgba(0,168,90,0));
         }
 
         div[data-testid="stMetricLabel"] p {
@@ -501,28 +501,28 @@ def ly_custom_css() -> None:
         }
 
         button[data-baseweb="tab"][aria-selected="true"] {
-            color: #FFD84A !important;
+            color: #00D46A !important;
         }
 
         div[data-baseweb="tab-highlight"] {
-            background-color: #FFD84A !important;
+            background-color: #00D46A !important;
         }
 
         .stDownloadButton button, .stButton button {
             border-radius: 14px !important;
-            border: 1px solid rgba(255, 216, 74, 0.45) !important;
-            background: linear-gradient(135deg, rgba(255, 216, 74, 0.98), rgba(255, 176, 0, 0.86)) !important;
+            border: 1px solid rgba(0, 212, 106, 0.45) !important;
+            background: linear-gradient(135deg, rgba(0, 212, 106, 0.98), rgba(0, 168, 90, 0.86)) !important;
             color: #121008 !important;
             font-weight: 850 !important;
         }
 
 
-        /* Final unified input styling: one calm surface, one yellow focus line, no orange/red rings. */
+        /* Final unified input styling: one calm surface, one green focus line, no orange/red rings. */
         :root {
             --mn-input-bg: rgba(13, 13, 9, 0.90);
-            --mn-input-border: rgba(255, 216, 74, 0.18);
-            --mn-input-border-hover: rgba(255, 216, 74, 0.28);
-            --mn-input-border-focus: rgba(255, 216, 74, 0.92);
+            --mn-input-border: rgba(0, 212, 106, 0.18);
+            --mn-input-border-hover: rgba(0, 212, 106, 0.28);
+            --mn-input-border-focus: rgba(0, 212, 106, 0.92);
         }
 
         /* Put the single visible border on the BaseWeb input shell. */
@@ -593,7 +593,7 @@ def ly_custom_css() -> None:
             border-radius: 0 !important;
             box-shadow: none !important;
             outline: none !important;
-            caret-color: #FFD84A !important;
+            caret-color: #00D46A !important;
         }
 
         /* Make the password eye area the same surface as the input; no black patch and no separate outline. */
@@ -642,23 +642,23 @@ def ly_custom_css() -> None:
             box-shadow: none !important;
             outline: none !important;
         }
-        /* Timeline slider: make track, selected range, handles, and date labels yellow/gold */
+        /* Timeline slider: make track, selected range, handles, and date labels green */
         div[data-testid="stSlider"] div[data-baseweb="slider"] > div {
-            color: #FFD84A !important;
+            color: #00D46A !important;
         }
         
         div[data-testid="stSlider"] [role="slider"] {
-            background-color: #FFD84A !important;
-            border-color: #FFD84A !important;
-            box-shadow: 0 0 0 2px rgba(255, 216, 74, 0.35) !important;
+            background-color: #00D46A !important;
+            border-color: #00D46A !important;
+            box-shadow: 0 0 0 2px rgba(0, 212, 106, 0.35) !important;
         }
         
         div[data-testid="stSlider"] [data-testid="stTickBar"] {
-            color: #FFD84A !important;
+            color: #00D46A !important;
         }
         
         div[data-testid="stSlider"] div {
-            accent-color: #FFD84A !important;
+            accent-color: #00D46A !important;
         }
         </style>
         """
@@ -688,7 +688,7 @@ def dashboard_hero_background(*, has_background_image: bool) -> str:
 
     return (
         "linear-gradient(135deg, rgba(20, 18, 10, 0.98), rgba(5, 5, 5, 0.82)), "
-        "linear-gradient(90deg, rgba(255, 216, 74, 0.12), transparent)"
+        "linear-gradient(90deg, rgba(0, 212, 106, 0.12), transparent)"
     )
 
 
@@ -698,9 +698,9 @@ def dashboard_hero_backdrop_filter(*, has_background_image: bool) -> str:
 
 def dashboard_hero_box_shadow(*, has_background_image: bool) -> str:
     if has_background_image:
-        return "inset 0 1px 0 rgba(255,216,74,0.20)"
+        return "inset 0 1px 0 rgba(0,212,106,0.20)"
 
-    return "0 24px 70px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,216,74,0.18)"
+    return "0 24px 70px rgba(0,0,0,0.38), inset 0 1px 0 rgba(0,212,106,0.18)"
 
 
 def dashboard_metric_background(*, has_background_image: bool) -> str:
@@ -708,7 +708,7 @@ def dashboard_metric_background(*, has_background_image: bool) -> str:
         return "transparent"
 
     return (
-        "linear-gradient(135deg, rgba(255, 216, 74, 0.12), rgba(255, 176, 0, 0.04) 42%, rgba(5, 5, 5, 0.94)), "
+        "linear-gradient(135deg, rgba(0, 212, 106, 0.12), rgba(0, 168, 90, 0.04) 42%, rgba(5, 5, 5, 0.94)), "
         "linear-gradient(180deg, rgba(28, 25, 14, 0.98), rgba(8, 8, 5, 0.98))"
     )
 
@@ -719,12 +719,12 @@ def dashboard_metric_backdrop_filter(*, has_background_image: bool) -> str:
 
 def dashboard_metric_box_shadow(*, has_background_image: bool) -> str:
     if has_background_image:
-        return "inset 0 1px 0 rgba(255,216,74,0.22)"
+        return "inset 0 1px 0 rgba(0,212,106,0.22)"
 
     return (
         "0 18px 42px rgba(0,0,0,0.42), "
-        "0 0 28px rgba(255,176,0,0.08), "
-        "inset 0 1px 0 rgba(255,216,74,0.18)"
+        "0 0 28px rgba(0,168,90,0.08), "
+        "inset 0 1px 0 rgba(0,212,106,0.18)"
     )
 
 
@@ -735,7 +735,7 @@ def dashboard_background_image_url() -> str:
 
     image_path = Path(source).expanduser() if source else DEFAULT_BACKGROUND_IMAGE
     if not image_path.is_absolute():
-        image_path = _DIR / image_path
+        image_path = APP_DIR / image_path
     if source and not image_path.is_file():
         image_path = DEFAULT_BACKGROUND_IMAGE
 
@@ -788,7 +788,7 @@ def require_dashboard_password() -> None:
     if st.session_state.get("dashboard_authenticated"):
         return
 
-    ly_custom_css()
+    apply_custom_css()
     st.markdown(
         """
         <div class="dashboard-hero">
@@ -824,7 +824,7 @@ def request_auth(username: str, password: str, auth_method: str) -> Any:
 
 
 def request_headers(token: str, auth_method: str) -> dict[str, str]:
-    headers = {"Accept": "lication/json"}
+    headers = {"Accept": "application/json"}
     if auth_method.lower() == "bearer":
         if not token:
             raise MarorkaConfigError("MARORKA_TOKEN is required for bearer auth.")
@@ -903,7 +903,7 @@ def compact_odata_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         if row.get("ReportType") in EXCLUDED_REPORT_TYPES:
             continue
-        compact_rows.end({column: row.get(column) for column in SOURCE_COLUMNS})
+        compact_rows.append({column: row.get(column) for column in SOURCE_COLUMNS})
 
     return compact_rows
 
@@ -1065,7 +1065,7 @@ def sum_numeric_columns(df: pd.DataFrame, columns: list[str]) -> pd.Series:
     available_columns = [column for column in columns if column in df.columns]
     if not available_columns:
         return pd.Series(pd.NA, index=df.index, dtype="Float64")
-    return df[available_columns].ly(pd.to_numeric, errors="coerce").sum(axis=1, min_count=1)
+    return df[available_columns].apply(pd.to_numeric, errors="coerce").sum(axis=1, min_count=1)
 
 
 def build_report_rows(df: pd.DataFrame) -> pd.DataFrame:
@@ -1374,7 +1374,7 @@ def render_excel_like_filters(
     options = []
     for column in [*previous_columns, *current_options]:
         if column not in options:
-            options.end(column)
+            options.append(column)
 
     selected_columns = st.multiselect(
         label,
@@ -1403,7 +1403,7 @@ def render_excel_like_filters(
             to_value, to_ok = parse_optional_date(to_text)
             if not from_ok or not to_ok:
                 st.warning(f"{column}: enter dates as dd/mm/yyyy or yyyy-mm-dd.")
-            specs.end({"column": column, "kind": "datetime", "from": from_value, "to": to_value})
+            specs.append({"column": column, "kind": "datetime", "from": from_value, "to": to_value})
             continue
 
         if is_numeric_like(series):
@@ -1426,7 +1426,7 @@ def render_excel_like_filters(
             if minimum is not None and maximum is not None and minimum > maximum:
                 minimum, maximum = maximum, minimum
                 min_op, max_op = ">=", "<="
-            specs.end({
+            specs.append({
                 "column": column,
                 "kind": "numeric",
                 "min": minimum,
@@ -1443,19 +1443,19 @@ def render_excel_like_filters(
         value_options = []
         for value in [*previous_values, *unique_display_values(series)]:
             if value not in value_options:
-                value_options.end(value)
+                value_options.append(value)
         selected_values = st.multiselect(
             "Values",
             options=value_options,
             key=value_key,
             help="Leave blank to include all values for this column.",
         )
-        specs.end({"column": column, "kind": "categorical", "values": selected_values})
+        specs.append({"column": column, "kind": "categorical", "values": selected_values})
 
     return specs
 
 
-def ly_excel_like_filters(df: pd.DataFrame, specs: list[dict[str, Any]]) -> pd.DataFrame:
+def apply_excel_like_filters(df: pd.DataFrame, specs: list[dict[str, Any]]) -> pd.DataFrame:
     filtered = df.copy()
 
     for spec in specs:
