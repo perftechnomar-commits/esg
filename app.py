@@ -908,7 +908,7 @@ def compact_odata_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
     return compact_rows
 
-
+@st.cache_data(ttl=API_CACHE_TTL_SECONDS, show_spinner=False)
 def fetch_report_data(
     username: str,
     password: str,
