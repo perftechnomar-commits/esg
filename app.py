@@ -509,7 +509,7 @@ def apply_custom_css() -> None:
         }
 
         .stDownloadButton button, .stButton button {
-            border-radius: 12px !important;
+            border-radius: 14px !important;
             border: 1px solid rgba(0, 212, 106, 0.45) !important;
             background: linear-gradient(135deg, rgba(0, 212, 106, 0.98), rgba(0, 168, 90, 0.86)) !important;
             color: #121008 !important;
