@@ -514,6 +514,22 @@ def apply_custom_css() -> None:
             background: linear-gradient(135deg, rgba(0, 212, 106, 0.98), rgba(0, 168, 90, 0.86)) !important;
             color: #121008 !important;
             font-weight: 850 !important;
+        
+            padding: 0.55rem 1rem !important;
+            font-size: 0.95rem !important;
+            min-height: 42px !important;
+        }
+        
+        /* Sidebar refresh button spacing */
+        section[data-testid="stSidebar"] .stButton button {
+            margin-bottom: 0.85rem !important;
+        }
+        
+        /* Optional: slightly smaller only for sidebar buttons */
+        section[data-testid="stSidebar"] .stButton button {
+            padding: 0.50rem 0.95rem !important;
+            font-size: 0.92rem !important;
+            min-height: 40px !important;
         }
 
 
