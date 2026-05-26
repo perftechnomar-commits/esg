@@ -525,11 +525,14 @@ def apply_custom_css() -> None:
             margin-bottom: 0.85rem !important;
         }
         
-        /* Optional: slightly smaller only for sidebar buttons */
         section[data-testid="stSidebar"] .stButton button {
-            padding: 0.50rem 0.95rem !important;
-            font-size: 0.92rem !important;
-            min-height: 40px !important;
+            width: auto !important;
+            min-width: 145px !important;
+            max-width: 165px !important;
+        
+            padding: 0.45rem 0.85rem !important;
+            font-size: 0.90rem !important;
+            min-height: 38px !important;
         }
 
 
@@ -1560,7 +1563,7 @@ def sidebar_controls() -> tuple[date, date, str, list[str], bool]:
     api_start_date = API_FULL_START_DATE
     api_end_date = date.today()
 
-    refresh = st.sidebar.button("Refresh API data", use_container_width=True)
+    refresh = st.sidebar.button("Refresh API data", use_container_width=False)
 
     group, vessels = selected_vessel_controls()
 
