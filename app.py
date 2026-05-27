@@ -887,7 +887,9 @@ def run_warmup_if_requested() -> None:
     """Warm up the ESG API/cache via a secret-token URL before password protection."""
     if not is_warmup_request():
         return
-
+        
+    apply_custom_css()
+    
     if not warmup_token_is_valid():
         st.error("Invalid or missing warmup token.")
         st.stop()
