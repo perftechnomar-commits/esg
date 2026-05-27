@@ -800,6 +800,90 @@ def read_secret(name: str, default: str = "") -> str:
     return str(value).strip() if value is not None else default
 
 
+def get_query_param(name: str, default: str = "") -> str:
+    """Read one query parameter value, compatible with newer and older Streamlit versions."""
+    try:
+        value = st.query_params.get(name, default)
+    except Exception:
+        try:
+            value = st.experimental_get_query_params().get(name, [default])
+        except Exception:
+            value = default
+
+    if isinstance(value, list):
+        value = value[0] if value else default
+
+    return str(value) if value is not None else default
+
+
+def is_warmup_request() -> bool:
+    return get_query_param("warmup", "0") == "1"
+
+
+def warmup_token_is_valid() -> bool:
+    expected_token = read_secret("WARMUP_TOKEN")
+    provided_token = get_query_param("token", "")
+
+    if not expected_token:
+        return False
+
+    return hmac.compare_digest(provided_token, expected_token)
+
+
+def run_warmup_if_requested() -> None:
+    """Warm up the ESG API/cache via a secret-token URL before password protection."""
+    if not is_warmup_request():
+        return
+
+    if not warmup_token_is_valid():
+        st.error("Invalid or missing warmup token.")
+        st.stop()
+
+    username = read_secret("MARORKA_USERNAME")
+    password = read_secret("MARORKA_PASSWORD")
+    token = read_secret("MARORKA_TOKEN")
+    auth_method = read_secret("MARORKA_AUTH_METHOD", "basic")
+
+    if auth_method.lower() in {"basic", "digest"} and (not username or not password):
+        st.error("Warmup failed: MARORKA_USERNAME and MARORKA_PASSWORD are required.")
+        st.stop()
+
+    if get_query_param("force", "0") == "1":
+        fetch_report_data.clear()
+
+    try:
+        with st.spinner("Warming up ESG Marorka water/waste data..."):
+            raw_df, metadata = fetch_report_data(
+                username=username,
+                password=password,
+                token=token,
+                auth_method=auth_method,
+                start_date=API_FULL_START_DATE,
+            )
+            df = transform_report_data(raw_df)
+    except requests.HTTPError as exc:
+        status = exc.response.status_code if exc.response is not None else "unknown"
+        st.error(f"Warmup failed: Marorka API request failed with status {status}.")
+        st.stop()
+    except (MarorkaConfigError, ValueError, requests.RequestException) as exc:
+        st.error(f"Warmup failed: {exc}")
+        st.stop()
+
+    st.success("Warmup OK.")
+    st.write(
+        {
+            "api_rows": int(len(raw_df)),
+            "dashboard_rows": int(len(df)),
+            "force_refresh": get_query_param("force", "0") == "1",
+            "kept_rows": metadata.get("kept_rows", metadata.get("rows", 0)),
+            "scanned_rows": metadata.get("scanned_rows", 0),
+            "pages": metadata.get("pages", 0),
+            "fetch_seconds": metadata.get("fetch_seconds", "-"),
+        }
+    )
+    st.stop()
+
+
 def require_dashboard_password() -> None:
     dashboard_password = read_secret("DASHBOARD_PASSWORD")
     if not dashboard_password:
@@ -1713,6 +1797,7 @@ def raw_data_covers_request(
 
 
 def main() -> None:
+    run_warmup_if_requested()
     require_dashboard_password()
     apply_custom_css()
 
