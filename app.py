@@ -775,7 +775,7 @@ def render_header(selected_group: str, selected_vessels: list[str]) -> None:
             <div class="eyebrow">Marorka water & waste monitoring</div>
             <h1 class="dashboard-title">ESG - Water & Waste</h1>
             <div class="dashboard-subtitle">
-                {escape(selected_group)} | {escape(vessel_text)} | API snapshot
+                {escape(selected_group)} | {escape(vessel_text)}
             </div>
         </div>
         """,
