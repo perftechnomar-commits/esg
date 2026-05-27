@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode, urljoin
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import requests
@@ -679,7 +680,27 @@ def apply_custom_css() -> None:
         div[data-testid="stSlider"] div {
             accent-color: #00D46A !important;
         }
-        </style>
+        
+        .api-load-caption {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin: -0.35rem 0 1.05rem 0;
+            padding: 0.38rem 0.72rem;
+            border: 1px solid rgba(0, 212, 106, 0.22);
+            border-radius: 999px;
+            background: rgba(13, 13, 9, 0.46);
+            color: #B8B29F;
+            font-size: 0.80rem;
+            font-weight: 650;
+            backdrop-filter: blur(6px);
+        }
+
+        .api-load-caption span {
+            color: #FFF7CC;
+            font-weight: 800;
+        }
+</style>
         """
         .replace("__BACKGROUND_IMAGE_LAYER__", background_image_layer)
         .replace("__HERO_BACKGROUND__", hero_background)
@@ -783,6 +804,20 @@ def render_header(selected_group: str, selected_vessels: list[str]) -> None:
     )
 
 
+def render_api_load_caption(metadata: dict[str, Any] | None) -> None:
+    """Render one small, discrete last-load indicator below the dashboard hero."""
+    metadata = metadata or {}
+    last_load = metadata.get("loaded_at_local") or metadata.get("loaded_at_utc") or "-"
+    st.markdown(
+        f"""
+        <div class="api-load-caption">
+            Last API load: <span>{escape(str(last_load))}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 # =============================================================================
 # Secrets/auth/API helpers
 # =============================================================================
@@ -798,6 +833,24 @@ def read_secret(name: str, default: str = "") -> str:
     except Exception:
         value = os.getenv(name, default)
     return str(value).strip() if value is not None else default
+
+
+def app_timezone() -> ZoneInfo:
+    """Return dashboard display timezone. Defaults to Greece local time."""
+    timezone_name = read_secret("APP_TIMEZONE", "Europe/Athens")
+    try:
+        return ZoneInfo(timezone_name)
+    except Exception:
+        return ZoneInfo("Europe/Athens")
+
+
+def local_time_label(dt_utc: datetime | None = None) -> str:
+    """Format a UTC timestamp in the configured dashboard timezone."""
+    dt_utc = dt_utc or datetime.now(timezone.utc)
+    if dt_utc.tzinfo is None:
+        dt_utc = dt_utc.replace(tzinfo=timezone.utc)
+    local_dt = dt_utc.astimezone(app_timezone())
+    return local_dt.strftime("%Y-%m-%d %H:%M:%S %Z")
 
 
 def get_query_param(name: str, default: str = "") -> str:
@@ -875,6 +928,7 @@ def run_warmup_if_requested() -> None:
             "api_rows": int(len(raw_df)),
             "dashboard_rows": int(len(df)),
             "force_refresh": get_query_param("force", "0") == "1",
+            "last_api_load_local": metadata.get("loaded_at_local"),
             "kept_rows": metadata.get("kept_rows", metadata.get("rows", 0)),
             "scanned_rows": metadata.get("scanned_rows", 0),
             "pages": metadata.get("pages", 0),
@@ -1054,7 +1108,10 @@ def fetch_report_data(
                 break
             next_url = urljoin(next_url, next_link)
 
+    loaded_at_utc = datetime.now(timezone.utc)
     metadata = {
+        "loaded_at_utc": loaded_at_utc.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        "loaded_at_local": local_time_label(loaded_at_utc),
         "rows": len(kept_rows),
         "kept_rows": len(kept_rows),
         "scanned_rows": scanned_rows,
@@ -1752,7 +1809,9 @@ def set_loaded_raw_state(
     signature: dict[str, Any],
 ) -> None:
     metadata = metadata.copy()
-    metadata["loaded_at_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    loaded_at_utc = datetime.now(timezone.utc)
+    metadata["loaded_at_utc"] = metadata.get("loaded_at_utc") or loaded_at_utc.strftime("%Y-%m-%d %H:%M:%S UTC")
+    metadata["loaded_at_local"] = metadata.get("loaded_at_local") or local_time_label(loaded_at_utc)
     metadata["loaded_start_date"] = signature["start_date"]
     st.session_state["loaded_raw_df"] = raw_df
     st.session_state["loaded_metadata"] = metadata
@@ -1825,12 +1884,13 @@ def main() -> None:
     )
 
     if needs_raw_load:
-        if not refresh:
-            st.info(
-                "Click **Load / Refresh API data** to pull Marorka water/waste data. "
-                "Report filter changes will use the loaded data locally and will not call the API."
-            )
-            st.stop()
+        if refresh:
+            fetch_report_data.clear()
+            st.session_state.pop("loaded_raw_df", None)
+            st.session_state.pop("loaded_metadata", None)
+            st.session_state.pop("loaded_request_signature", None)
+            st.session_state.pop("loaded_transformed_df", None)
+            st.session_state.pop("loaded_transform_signature", None)
 
         try:
             with st.spinner("Loading compact Marorka water/waste data..."):
@@ -1861,7 +1921,7 @@ def main() -> None:
     raw_df = st.session_state.get("loaded_raw_df")
 
     if raw_df is None or metadata is None:
-        st.info("Click **Load / Refresh API data** to load the selected report window.")
+        st.error("API data was not loaded. Please press Refresh API data or try again.")
         st.stop()
 
     if all_df is None or current_transform_sig != transform_sig:
@@ -1883,6 +1943,8 @@ def main() -> None:
     if df.empty:
         st.warning("No matching water/waste report values were returned for the selected fleet/date window.")
         st.stop()
+
+    render_api_load_caption(metadata)
 
     tab_dashboard, tab_diagnostics, tab_data = st.tabs(["Dashboard", "API Diagnostics", "Dataset"])
 
@@ -1962,7 +2024,7 @@ def main() -> None:
                     end_date.isoformat(),
                     dashboard_start_date.isoformat(),
                     dashboard_end_date.isoformat(),
-                    metadata.get("loaded_at_utc", "-"),
+                    metadata.get("loaded_at_local") or metadata.get("loaded_at_utc", "-"),
                     metadata.get("loaded_start_date", "-"),
                     f"{len(report_view_df):,}",
                     f"{len(all_df):,}",
