@@ -905,7 +905,7 @@ def run_warmup_if_requested() -> None:
         fetch_report_data.clear()
 
     try:
-        with st.spinner("Warming up ESG Marorka water/waste data..."):
+        with st.spinner("Warming up API..."):
             raw_df, metadata = fetch_report_data(
                 username=username,
                 password=password,
