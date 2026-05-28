@@ -905,6 +905,7 @@ def run_warmup_if_requested() -> None:
 
     if get_query_param("force", "0") == "1":
         fetch_report_data.clear()
+        cached_transform_report_data.clear()
 
     try:
         with st.spinner("Warming up API..."):
@@ -915,7 +916,7 @@ def run_warmup_if_requested() -> None:
                 auth_method=auth_method,
                 start_date=API_FULL_START_DATE,
             )
-            df = transform_report_data(raw_df)
+            df = cached_transform_report_data(raw_df)
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else "unknown"
         st.error(f"Warmup failed: Marorka API request failed with status {status}.")
@@ -1310,6 +1311,13 @@ def transform_report_data(raw_df: pd.DataFrame) -> pd.DataFrame:
     report_df = report_df.sort_values(["ShipName", "EndDateTimeGMT", "ReportId"], na_position="last")
     report_df = add_calculations(report_df)
     return report_df
+
+
+
+
+@st.cache_data(ttl=API_CACHE_TTL_SECONDS, show_spinner=False)
+def cached_transform_report_data(raw_df: pd.DataFrame) -> pd.DataFrame:
+    return transform_report_data(raw_df)
 
 
 def filter_reports_for_selection(
@@ -1888,6 +1896,7 @@ def main() -> None:
     if needs_raw_load:
         if refresh:
             fetch_report_data.clear()
+            cached_transform_report_data.clear()
             st.session_state.pop("loaded_raw_df", None)
             st.session_state.pop("loaded_metadata", None)
             st.session_state.pop("loaded_request_signature", None)
@@ -1929,7 +1938,7 @@ def main() -> None:
     if all_df is None or current_transform_sig != transform_sig:
         try:
             transform_started_at = time.perf_counter()
-            all_df = transform_report_data(raw_df)
+            all_df = cached_transform_report_data(raw_df)
             set_loaded_transform_state(all_df, transform_sig)
             metadata = st.session_state.get("loaded_metadata")
             if isinstance(metadata, dict):
