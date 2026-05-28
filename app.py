@@ -1904,7 +1904,7 @@ def main() -> None:
             st.session_state.pop("loaded_transform_signature", None)
 
         try:
-            with st.spinner("Loading compact Marorka water/waste data..."):
+            with st.spinner("Loading API..."):
                 raw_df, metadata = fetch_report_data(
                     username=username,
                     password=password,
