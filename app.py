@@ -25,7 +25,7 @@ from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 # Configuration
 # =============================================================================
 
-APP_TITLE = "ESG - Water & Waste"
+APP_TITLE = "ESG - metrics"
 APP_DIR = Path(__file__).resolve().parent
 DEFAULT_BACKGROUND_IMAGE = APP_DIR / "06626d6c-ataman-dpg-panathinaikos-olympiacos.jpg"
 ODATA_ENDPOINT = "https://online.marorka.com/Odata/v1/ODataService.svc/ReportData"
@@ -793,8 +793,8 @@ def render_header(selected_group: str, selected_vessels: list[str]) -> None:
     st.markdown(
         f"""
         <div class="dashboard-hero">
-            <div class="eyebrow">Marorka water & waste monitoring</div>
-            <h1 class="dashboard-title">ESG - Water & Waste</h1>
+            <div class="eyebrow">Marorka metrics monitoring</div>
+            <h1 class="dashboard-title">ESG - metrics</h1>
             <div class="dashboard-subtitle">
                 {escape(selected_group)} | {escape(vessel_text)}
             </div>
@@ -954,7 +954,7 @@ def require_dashboard_password() -> None:
         """
         <div class="dashboard-hero">
             <div class="eyebrow">Secure access</div>
-            <h1 class="dashboard-title">ESG - Water & Waste</h1>
+            <h1 class="dashboard-title">ESG - metrics</h1>
             <div class="dashboard-subtitle">Enter your dashboard password to continue.</div>
         </div>
         """,
@@ -1412,8 +1412,8 @@ def to_excel_bytes(df: pd.DataFrame) -> bytes:
         if pd.api.types.is_datetime64_any_dtype(safe_df[column]):
             safe_df[column] = pd.to_datetime(safe_df[column], errors="coerce").dt.tz_localize(None)
     with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        safe_df.to_excel(writer, index=False, sheet_name="Water & Waste")
-        worksheet = writer.sheets["Water & Waste"]
+        safe_df.to_excel(writer, index=False, sheet_name="metrics")
+        worksheet = writer.sheets["metrics"]
         for column_cells in worksheet.columns:
             max_length = max(len(str(cell.value)) if cell.value is not None else 0 for cell in column_cells)
             worksheet.column_dimensions[column_cells[0].column_letter].width = min(max(max_length + 2, 12), 45)
@@ -1985,7 +1985,7 @@ def main() -> None:
     report_view_df = apply_excel_like_filters(dashboard_df, report_filter_specs)
 
     with tab_dashboard:
-        st.markdown('<div class="section-title">Water & Waste Summary</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">metrics Summary</div>', unsafe_allow_html=True)
         render_kpis(report_view_df)
         if len(report_view_df) != len(dashboard_df):
             st.caption(
@@ -2078,7 +2078,7 @@ def main() -> None:
 
         if export_ready:
             st.download_button(
-                "Download water & waste Excel",
+                "Download metrics Excel",
                 data=st.session_state["fleet_export_bytes"],
                 file_name="water_waste_report.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
