@@ -805,13 +805,15 @@ def render_header(selected_group: str, selected_vessels: list[str]) -> None:
 
 
 def render_api_load_caption(metadata: dict[str, Any] | None) -> None:
-    """Render one small, discrete last-load indicator below the dashboard hero."""
     metadata = metadata or {}
     last_load = metadata.get("loaded_at_local") or metadata.get("loaded_at_utc") or "-"
+
+    last_load_display = str(last_load).replace(" EEST", "").replace(" EET", "")
+
     st.markdown(
         f"""
         <div class="api-load-caption">
-            Last API load: <span>{escape(str(last_load))}</span>
+            Last API load: <span>{escape(last_load_display)} LT</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1013,7 +1015,7 @@ def default_report_window(today: date | None = None) -> tuple[date, date]:
 
 
 def build_odata_url(start_date: date) -> str:
-    start_text = start_date.strftime("%d-%m-%Y")
+    start_text = start_date.strftime("%Y-%m-%d")
     params = {
         "$filter": f"StartDateTimeGMT gt DateTime'{start_text}'",
         "$select": ",".join(SOURCE_COLUMNS),
