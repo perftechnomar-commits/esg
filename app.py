@@ -1716,7 +1716,30 @@ def sidebar_controls() -> tuple[date, date, str, list[str], bool]:
     api_start_date = API_FULL_START_DATE
     api_end_date = date.today()
 
-    refresh = st.sidebar.button("Refresh API data", use_container_width=False)
+    refresh_requested = st.sidebar.button("Refresh API data", use_container_width=False)
+    if refresh_requested:
+        st.session_state["confirm_api_refresh"] = True
+
+    refresh = False
+    if st.session_state.get("confirm_api_refresh"):
+        metadata = st.session_state.get("loaded_metadata") or {}
+        last_load = metadata.get("loaded_at_local") or metadata.get("loaded_at_utc") or "-"
+        last_load_display = str(last_load).replace(" EEST", "").replace(" EET", "")
+
+        st.sidebar.warning(
+            f"Refresh will call the API and may take a while.\n\n"
+            f"Last updated data was on: {last_load_display} LT"
+        )
+
+        col1, col2 = st.sidebar.columns(2)
+
+        if col1.button("Confirm"):
+            refresh = True
+            st.session_state["confirm_api_refresh"] = False
+
+        if col2.button("Cancel"):
+            st.session_state["confirm_api_refresh"] = False
+            st.rerun()
 
     group, vessels = selected_vessel_controls()
 
