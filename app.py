@@ -27,7 +27,6 @@ from requests.auth import HTTPBasicAuth, HTTPDigestAuth
 
 APP_TITLE = "ESG - metrics"
 APP_DIR = Path(__file__).resolve().parent
-DEFAULT_BACKGROUND_IMAGE = APP_DIR / "06626d6c-ataman-dpg-panathinaikos-olympiacos.jpg"
 ODATA_ENDPOINT = "https://online.marorka.com/Odata/v1/ODataService.svc/ReportData"
 MAX_ODATA_PAGES = 250
 API_CACHE_TTL_SECONDS = 21600  # 6 hours; KPI filters use local data and do not refetch.
