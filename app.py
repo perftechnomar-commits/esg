@@ -905,20 +905,39 @@ def run_warmup_if_requested() -> None:
         st.error("Warmup failed: MARORKA_USERNAME and MARORKA_PASSWORD are required.")
         st.stop()
 
-    if get_query_param("force", "0") == "1":
-        fetch_report_data.clear()
-        cached_transform_report_data.clear()
+    force_refresh = get_query_param("force", "0") == "1"
 
     try:
         with st.spinner("Warming up API..."):
-            raw_df, metadata = fetch_report_data(
-                username=username,
-                password=password,
-                token=token,
-                auth_method=auth_method,
-                start_date=API_FULL_START_DATE,
-            )
-            df = cached_transform_report_data(raw_df)
+            if force_refresh:
+                raw_df, metadata = fetch_report_data.__wrapped__(
+                    username=username,
+                    password=password,
+                    token=token,
+                    auth_method=auth_method,
+                    start_date=API_FULL_START_DATE,
+                )
+                df = transform_report_data(raw_df)
+                # Fresh load succeeded, so it is now safe to replace the shared cached results.
+                fetch_report_data.clear()
+                cached_transform_report_data.clear()
+                raw_df, metadata = fetch_report_data(
+                    username=username,
+                    password=password,
+                    token=token,
+                    auth_method=auth_method,
+                    start_date=API_FULL_START_DATE,
+                )
+                df = cached_transform_report_data(raw_df)
+            else:
+                raw_df, metadata = fetch_report_data(
+                    username=username,
+                    password=password,
+                    token=token,
+                    auth_method=auth_method,
+                    start_date=API_FULL_START_DATE,
+                )
+                df = cached_transform_report_data(raw_df)
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else "unknown"
         st.error(f"Warmup failed: Marorka API request failed with status {status}.")
@@ -932,7 +951,7 @@ def run_warmup_if_requested() -> None:
         {
             "api_rows": int(len(raw_df)),
             "dashboard_rows": int(len(df)),
-            "force_refresh": get_query_param("force", "0") == "1",
+            "force_refresh": force_refresh,
             "last_api_load_local": metadata.get("loaded_at_local"),
             "kept_rows": metadata.get("kept_rows", metadata.get("rows", 0)),
             "scanned_rows": metadata.get("scanned_rows", 0),
@@ -1919,26 +1938,41 @@ def main() -> None:
     )
 
     if needs_raw_load:
-        if refresh:
-            fetch_report_data.clear()
-            cached_transform_report_data.clear()
-            st.session_state.pop("loaded_raw_df", None)
-            st.session_state.pop("loaded_metadata", None)
-            st.session_state.pop("loaded_request_signature", None)
-            st.session_state.pop("loaded_transformed_df", None)
-            st.session_state.pop("loaded_transform_signature", None)
-
         try:
             with st.spinner("Loading API..."):
-                raw_df, metadata = fetch_report_data(
-                    username=username,
-                    password=password,
-                    token=token,
-                    auth_method=auth_method,
-                    start_date=start_date,
-                )
-            set_loaded_raw_state(raw_df, metadata, raw_signature)
-            df = None
+                if refresh:
+                    # Load into temporary variables first. If the API fails, the existing dashboard data remains available.
+                    fresh_raw_df, fresh_metadata = fetch_report_data.__wrapped__(
+                        username=username,
+                        password=password,
+                        token=token,
+                        auth_method=auth_method,
+                        start_date=start_date,
+                    )
+                    fresh_transform_signature = transform_signature(raw_signature)
+                    fresh_all_df = transform_report_data(fresh_raw_df)
+
+                    # Fresh raw + transform succeeded, so it is now safe to replace active session/cached data.
+                    fetch_report_data.clear()
+                    cached_transform_report_data.clear()
+                    set_loaded_raw_state(fresh_raw_df, fresh_metadata, raw_signature)
+                    set_loaded_transform_state(fresh_all_df, fresh_transform_signature)
+                    metadata = st.session_state.get("loaded_metadata")
+                    if isinstance(metadata, dict):
+                        metadata.setdefault("transform_seconds", "fresh")
+                        st.session_state["loaded_metadata"] = metadata
+                    raw_df = fresh_raw_df
+                    df = fresh_all_df
+                else:
+                    raw_df, metadata = fetch_report_data(
+                        username=username,
+                        password=password,
+                        token=token,
+                        auth_method=auth_method,
+                        start_date=start_date,
+                    )
+                    set_loaded_raw_state(raw_df, metadata, raw_signature)
+                    df = None
         except requests.HTTPError as exc:
             status = exc.response.status_code if exc.response is not None else "unknown"
             st.error(f"Marorka API request failed with status {status}.")
