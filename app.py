@@ -889,9 +889,9 @@ def run_warmup_if_requested() -> None:
     """Warm up the ESG API/cache via a secret-token URL before password protection."""
     if not is_warmup_request():
         return
-        
+
     apply_custom_css()
-    
+
     if not warmup_token_is_valid():
         st.error("Invalid or missing warmup token.")
         st.stop()
@@ -900,47 +900,35 @@ def run_warmup_if_requested() -> None:
     password = read_secret("MARORKA_PASSWORD")
     token = read_secret("MARORKA_TOKEN")
     auth_method = read_secret("MARORKA_AUTH_METHOD", "basic")
+    start_date = API_FULL_START_DATE
 
     if auth_method.lower() in {"basic", "digest"} and (not username or not password):
         st.error("Warmup failed: MARORKA_USERNAME and MARORKA_PASSWORD are required.")
         st.stop()
 
     force_refresh = get_query_param("force", "0") == "1"
+    cache_marker = raw_value_alias_signature()
+
+    if force_refresh:
+        cached_cached_fetch_report_data.clear()
+        cached_transform_report_data.clear()
 
     try:
         with st.spinner("Warming up API..."):
-            if force_refresh:
-                raw_df, metadata = fetch_report_data.__wrapped__(
-                    username=username,
-                    password=password,
-                    token=token,
-                    auth_method=auth_method,
-                    start_date=API_FULL_START_DATE,
-                )
-                df = transform_report_data(raw_df)
-                # Fresh load succeeded, so it is now safe to replace the shared cached results.
-                fetch_report_data.clear()
-                cached_transform_report_data.clear()
-                raw_df, metadata = fetch_report_data(
-                    username=username,
-                    password=password,
-                    token=token,
-                    auth_method=auth_method,
-                    start_date=API_FULL_START_DATE,
-                )
-                df = cached_transform_report_data(raw_df)
-            else:
-                raw_df, metadata = fetch_report_data(
-                    username=username,
-                    password=password,
-                    token=token,
-                    auth_method=auth_method,
-                    start_date=API_FULL_START_DATE,
-                )
-                df = cached_transform_report_data(raw_df)
+            raw_df, metadata = cached_fetch_report_data(
+                username=username,
+                password=password,
+                token=token,
+                auth_method=auth_method,
+                start_date=start_date,
+                cache_marker=cache_marker,
+            )
+            df = cached_transform_report_data(raw_df)
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else "unknown"
         st.error(f"Warmup failed: Marorka API request failed with status {status}.")
+        if exc.response is not None and exc.response.request is not None:
+            st.code(exc.response.request.url, language="text")
         st.stop()
     except (MarorkaConfigError, ValueError, requests.RequestException) as exc:
         st.error(f"Warmup failed: {exc}")
@@ -949,10 +937,10 @@ def run_warmup_if_requested() -> None:
     st.success("Warmup OK.")
     st.write(
         {
-            "api_rows": int(len(raw_df)),
+            "last_api_load_local": metadata.get("loaded_at_local"),
+            "compact_api_rows": int(len(raw_df)),
             "dashboard_rows": int(len(df)),
             "force_refresh": force_refresh,
-            "last_api_load_local": metadata.get("loaded_at_local"),
             "kept_rows": metadata.get("kept_rows", metadata.get("rows", 0)),
             "scanned_rows": metadata.get("scanned_rows", 0),
             "pages": metadata.get("pages", 0),
@@ -960,7 +948,6 @@ def run_warmup_if_requested() -> None:
         }
     )
     st.stop()
-
 
 def require_dashboard_password() -> None:
     dashboard_password = read_secret("DASHBOARD_PASSWORD")
@@ -1036,7 +1023,7 @@ def default_report_window(today: date | None = None) -> tuple[date, date]:
 def build_odata_url(start_date: date) -> str:
     start_text = start_date.strftime("%Y-%m-%d")
     params = {
-        "$filter": f"StartDateTimeGMT gt DateTime'{start_text}'",
+        "$filter": f"StartDateTimeGMT gt DateTime'{start_text}T00:00:00'",
         "$select": ",".join(SOURCE_COLUMNS),
     }
     return f"{ODATA_ENDPOINT}?{urlencode(params)}"
@@ -1089,7 +1076,6 @@ def compact_odata_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
     return compact_rows
 
-@st.cache_data(ttl=API_CACHE_TTL_SECONDS, show_spinner=False)
 def fetch_report_data(
     username: str,
     password: str,
@@ -1147,6 +1133,23 @@ def fetch_report_data(
         "hit_page_limit": pages >= MAX_ODATA_PAGES,
     }
     return rows_to_dataframe(kept_rows), metadata
+
+@st.cache_data(ttl=API_CACHE_TTL_SECONDS, show_spinner=False)
+def cached_fetch_report_data(
+    username: str,
+    password: str,
+    token: str,
+    auth_method: str,
+    start_date: date,
+    cache_marker: str,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    return fetch_report_data(
+        username=username,
+        password=password,
+        token=token,
+        auth_method=auth_method,
+        start_date=start_date,
+    )
 
 
 # =============================================================================
@@ -1815,6 +1818,13 @@ def render_dashboard_date_slicer(df: pd.DataFrame) -> tuple[pd.DataFrame, date, 
 # =============================================================================
 
 
+def raw_value_alias_signature() -> str:
+    alias_text = "|".join(
+        f"{column}:{','.join(aliases)}"
+        for column, aliases in sorted(VALUE_ALIASES.items())
+    )
+    return sha256(alias_text.encode("utf-8")).hexdigest()[:12]
+
 def request_signature(
     username: str,
     auth_method: str,
@@ -1825,6 +1835,7 @@ def request_signature(
         "username_hash": sha256(username.encode("utf-8")).hexdigest()[:12],
         "auth_method": auth_method.lower(),
         "start_date": start_date.isoformat(),
+        "raw_value_alias_signature": raw_value_alias_signature(),
     }
 
 
@@ -1892,7 +1903,7 @@ def raw_data_covers_request(
 
     # If the same API/user/auth data was fetched from an earlier start date, it
     # also covers later start-date selections. No new API call is needed.
-    for key in ["endpoint", "username_hash", "auth_method"]:
+    for key in ["endpoint", "username_hash", "auth_method", "raw_value_alias_signature"]:
         if loaded_signature.get(key) != requested_signature.get(key):
             return False
 
@@ -1942,34 +1953,26 @@ def main() -> None:
             with st.spinner("Loading API..."):
                 if refresh:
                     # Load into temporary variables first. If the API fails, the existing dashboard data remains available.
-                    fresh_raw_df, fresh_metadata = fetch_report_data.__wrapped__(
-                        username=username,
-                        password=password,
-                        token=token,
-                        auth_method=auth_method,
-                        start_date=start_date,
-                    )
-                    fresh_transform_signature = transform_signature(raw_signature)
-                    fresh_all_df = transform_report_data(fresh_raw_df)
-
-                    # Fresh raw + transform succeeded, so it is now safe to replace active session/cached data.
-                    fetch_report_data.clear()
+                    cached_cached_fetch_report_data.clear()
                     cached_transform_report_data.clear()
-                    set_loaded_raw_state(fresh_raw_df, fresh_metadata, raw_signature)
-                    set_loaded_transform_state(fresh_all_df, fresh_transform_signature)
-                    metadata = st.session_state.get("loaded_metadata")
-                    if isinstance(metadata, dict):
-                        metadata.setdefault("transform_seconds", "fresh")
-                        st.session_state["loaded_metadata"] = metadata
-                    raw_df = fresh_raw_df
-                    df = fresh_all_df
-                else:
-                    raw_df, metadata = fetch_report_data(
+                    raw_df, metadata = cached_fetch_report_data(
                         username=username,
                         password=password,
                         token=token,
                         auth_method=auth_method,
                         start_date=start_date,
+                        cache_marker=raw_signature["raw_value_alias_signature"],
+                    )
+                    set_loaded_raw_state(raw_df, metadata, raw_signature)
+                    df = None
+                else:
+                    raw_df, metadata = cached_fetch_report_data(
+                        username=username,
+                        password=password,
+                        token=token,
+                        auth_method=auth_method,
+                        start_date=start_date,
+                        cache_marker=raw_signature["raw_value_alias_signature"],
                     )
                     set_loaded_raw_state(raw_df, metadata, raw_signature)
                     df = None
