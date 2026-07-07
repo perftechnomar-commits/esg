@@ -2084,7 +2084,7 @@ def main() -> None:
     report_view_df = apply_excel_like_filters(dashboard_df, report_filter_specs)
 
     with tab_dashboard:
-        st.markdown('<div class="section-title">metrics Summary</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Metrics</div>', unsafe_allow_html=True)
         render_kpis(report_view_df)
         if len(report_view_df) != len(dashboard_df):
             st.caption(
