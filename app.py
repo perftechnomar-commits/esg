@@ -915,26 +915,20 @@ def run_warmup_if_requested() -> None:
     try:
         with st.spinner("Warming up API..."):
             if force_refresh:
-                # Validate a fresh API pull before clearing any shared Streamlit caches.
-                raw_df, metadata = fetch_report_data.__wrapped__(
-                    username=username,
-                    password=password,
-                    token=token,
-                    auth_method=auth_method,
-                    start_date=API_FULL_START_DATE,
-                )
-                df = transform_report_data(raw_df)
+                # Clear first, then fetch and transform once through the shared
+                # Streamlit caches so the completed warmup remains available
+                # to new tabs and other users.
                 fetch_report_data.clear()
                 cached_transform_report_data.clear()
-            else:
-                raw_df, metadata = fetch_report_data(
-                    username=username,
-                    password=password,
-                    token=token,
-                    auth_method=auth_method,
-                    start_date=API_FULL_START_DATE,
-                )
-                df = cached_transform_report_data(raw_df)
+
+            raw_df, metadata = fetch_report_data(
+                username=username,
+                password=password,
+                token=token,
+                auth_method=auth_method,
+                start_date=API_FULL_START_DATE,
+            )
+            df = cached_transform_report_data(raw_df)
     except requests.HTTPError as exc:
         status = exc.response.status_code if exc.response is not None else "unknown"
         st.error(f"Warmup failed: Marorka API request failed with status {status}.")
@@ -1975,25 +1969,32 @@ def main() -> None:
         try:
             with st.spinner("Loading API..."):
                 if refresh:
-                    # Load into temporary variables first. If the API fails, the existing dashboard data remains available.
-                    fresh_raw_df, fresh_metadata = fetch_report_data.__wrapped__(
+                    # Refresh through the shared cached functions. Clearing first
+                    # guarantees a fresh API pull, while the successful result is
+                    # left cached for new tabs and other users.
+                    fetch_report_data.clear()
+                    cached_transform_report_data.clear()
+
+                    fresh_raw_df, fresh_metadata = fetch_report_data(
                         username=username,
                         password=password,
                         token=token,
                         auth_method=auth_method,
                         start_date=start_date,
                     )
+                    transform_started_at = time.perf_counter()
+                    fresh_all_df = cached_transform_report_data(fresh_raw_df)
                     fresh_transform_signature = transform_signature(raw_signature)
-                    fresh_all_df = transform_report_data(fresh_raw_df)
 
-                    # Fresh raw + transform succeeded, so it is now safe to replace active session/cached data.
-                    fetch_report_data.clear()
-                    cached_transform_report_data.clear()
                     set_loaded_raw_state(fresh_raw_df, fresh_metadata, raw_signature)
                     set_loaded_transform_state(fresh_all_df, fresh_transform_signature)
                     metadata = st.session_state.get("loaded_metadata")
                     if isinstance(metadata, dict):
-                        metadata.setdefault("transform_seconds", "fresh")
+                        metadata["transform_seconds"] = round(
+                            time.perf_counter() - transform_started_at,
+                            2,
+                        )
+                        metadata["transformed_rows"] = int(len(fresh_all_df))
                         st.session_state["loaded_metadata"] = metadata
                     raw_df = fresh_raw_df
                     df = fresh_all_df
