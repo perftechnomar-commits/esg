@@ -1889,10 +1889,29 @@ def default_report_window(today: date | None = None) -> tuple[date, date]:
     return start_date, end_date
 
 
-def build_odata_url(start_date: date) -> str:
-    start_text = start_date.strftime("%Y-%m-%d")
+def build_odata_url(
+    start_date: date,
+    end_date_exclusive: date | None = None,
+) -> str:
+    """Build an OData URL for either a full feed or one bounded date window.
+
+    Marorka uses a strict ``gt`` comparison. For bounded chunk requests, query
+    from the day before the requested start and trim the returned rows back to
+    the exact half-open interval in ``fetch_report_data``. This prevents records
+    at midnight on the first day from being omitted while keeping adjacent
+    chunks free of duplicates after the local trim.
+    """
+    query_start = (start_date - timedelta(days=1)) if end_date_exclusive else start_date
+    filter_parts = [
+        f"StartDateTimeGMT gt DateTime'{query_start.isoformat()}'"
+    ]
+    if end_date_exclusive is not None:
+        filter_parts.append(
+            f"StartDateTimeGMT lt DateTime'{end_date_exclusive.isoformat()}'"
+        )
+
     params = {
-        "$filter": f"StartDateTimeGMT gt DateTime'{start_text}'",
+        "$filter": " and ".join(filter_parts),
         "$select": ",".join(SOURCE_COLUMNS),
     }
     return f"{ODATA_ENDPOINT}?{urlencode(params)}"
