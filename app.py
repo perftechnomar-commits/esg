@@ -1285,7 +1285,13 @@ def publish_prepared_snapshot(
     raw_signature: dict[str, Any],
     prepared_signature: dict[str, Any],
 ) -> dict[str, Any]:
-    """Publish raw + fully transformed data atomically through a manifest pointer."""
+    """Finalize snapshot files and publish the manifest as the last major step.
+
+    Normal dashboard sessions discover a generation through the manifest. The
+    manifest is therefore written only after file writes, cache cleanup, and old
+    generation cleanup have completed. This keeps the dashboard timestamp and
+    the warmup completion message closely synchronized.
+    """
     generation = _snapshot_generation()
     raw_file = SNAPSHOT_DIR / f"raw_{generation}.parquet"
     transformed_file = SNAPSHOT_DIR / f"transformed_{generation}.parquet"
@@ -1302,6 +1308,7 @@ def publish_prepared_snapshot(
     manifest_metadata["snapshot_saved_at_utc"] = saved_at_utc
     manifest_metadata["snapshot_schema_version"] = SNAPSHOT_SCHEMA_VERSION
     manifest_metadata["loaded_start_date"] = raw_signature["start_date"]
+    manifest_metadata["loaded_from_snapshot"] = True
 
     manifest = {
         "snapshot_schema_version": SNAPSHOT_SCHEMA_VERSION,
@@ -1313,22 +1320,19 @@ def publish_prepared_snapshot(
         "metadata": manifest_metadata,
         "saved_at_utc": saved_at_utc,
     }
+
+    # Finish all potentially slow maintenance while the old manifest remains live.
+    cached_read_raw_snapshot.clear()
+    cached_read_transformed_snapshot.clear()
+    cached_transform_report_data.clear()
+    _cleanup_old_snapshot_generations()
+
+    # Publish last. Do not synchronously reopen or seed the new Parquet afterward.
     _atomic_write_text(
         SNAPSHOT_MANIFEST_FILE,
         json.dumps(manifest, indent=2, default=str),
     )
-
-    # Remove stale in-memory objects only after the new files and manifest exist.
-    cached_read_raw_snapshot.clear()
-    cached_read_transformed_snapshot.clear()
-    cached_transform_report_data.clear()
-
-    # Seed the shared prepared-data cache now, so the next browser session reads
-    # the finished table rather than repeating the transform.
-    cached_read_transformed_snapshot(generation, str(transformed_file))
-    _cleanup_old_snapshot_generations()
     return manifest
-
 
 def latest_raw_report_date(raw_df: pd.DataFrame) -> date | None:
     if raw_df.empty or "StartDateTimeGMT" not in raw_df.columns:
@@ -1545,10 +1549,9 @@ def refresh_persistent_snapshot(
         rows_kept=int(len(combined_raw_df)),
         transformed_rows=int(len(transformed_df)),
     )
-    loaded_snapshot = load_prepared_snapshot(raw_signature, prepared_signature)
-    if loaded_snapshot is None:
-        raise RuntimeError("The new prepared snapshot could not be re-opened after save.")
-    return loaded_snapshot
+    published_metadata = dict(published_manifest.get("metadata") or metadata)
+    published_metadata["loaded_from_snapshot"] = True
+    return transformed_df, published_metadata, published_manifest
 
 
 def rebuild_prepared_snapshot_from_raw(
@@ -1585,14 +1588,16 @@ def rebuild_prepared_snapshot_from_raw(
             "loaded_start_date": API_FULL_START_DATE.isoformat(),
         }
     )
-    publish_prepared_snapshot(
+    published_manifest = publish_prepared_snapshot(
         raw_df,
         transformed_df,
         metadata,
         raw_signature,
         prepared_signature,
     )
-    return load_prepared_snapshot(raw_signature, prepared_signature)
+    published_metadata = dict(published_manifest.get("metadata") or metadata)
+    published_metadata["loaded_from_snapshot"] = True
+    return transformed_df, published_metadata, published_manifest
 
 
 def ensure_prepared_snapshot(
