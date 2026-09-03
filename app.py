@@ -39,7 +39,7 @@ SNAPSHOT_DIR = APP_DIR / ".esg_metrics_cache"
 SNAPSHOT_MANIFEST_FILE = SNAPSHOT_DIR / "snapshot_manifest.json"
 SNAPSHOT_LOCK_FILE = SNAPSHOT_DIR / "snapshot_refresh.lock"
 SNAPSHOT_REFRESH_STATUS_FILE = SNAPSHOT_DIR / "snapshot_refresh_status.json"
-SNAPSHOT_SCHEMA_VERSION = "2026-07-15-esg-persistent-incremental-v1-chunked-bootstrap"
+SNAPSHOT_SCHEMA_VERSION = "2026-09-03-esg-water-waste-garbage-v2"
 SNAPSHOT_GENERATIONS_TO_KEEP = 2
 DEFAULT_INCREMENTAL_OVERLAP_DAYS = 14
 DEFAULT_REFRESH_CHUNK_DAYS = 31
@@ -117,6 +117,11 @@ VALUE_ALIASES = {
         "Bilge [cbm]",
         "Bilge [m3]",
     ],
+    "Garbage Disposed": [
+        "Garbage Disposed [cbm]",
+        "Garbage Disposed",
+        "Garbage Disposed [m3]",
+    ],
 }
 
 WATER_WASTE_COLUMNS = list(VALUE_ALIASES.keys())
@@ -136,6 +141,7 @@ DISPLAY_COLUMNS = [
     "Water Supplied (m3)",
     "Sludge",
     "Bilge",
+    "Garbage Disposed",
 ]
 
 VESSEL_GROUPS = {
